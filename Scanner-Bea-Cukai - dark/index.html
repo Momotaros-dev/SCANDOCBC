@@ -1,0 +1,1473 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scanner & BCP Bea Cukai</title>
+    <script
+      src="https://unpkg.com/html5-qrcode"
+      type="text/javascript"
+    ></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+      :root {
+        --bg-body: #111520;
+        --bg-sidebar: #171b29;
+        --bg-card: #202738;
+        --bg-input: #1a202f;
+        --border-color: #2b3346;
+        --text-main: #f8fafc;
+        --text-muted: #8492a6;
+        --accent-orange: #f36b3b;
+        --badge-bg: #1e3a2b;
+        --badge-text: #4cc068;
+        --row-active: #32262d;
+        --danger: #e63946;
+        --primary-blue: #3b82f6;
+      }
+
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", Inter, Tahoma, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ================= SIDEBAR KIRI ================= */
+      .sidebar {
+        width: 250px;
+        background-color: var(--bg-sidebar);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        padding: 20px 0;
+        z-index: 100;
+        flex-shrink: 0;
+      }
+
+      .brand {
+        order: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 20px;
+        margin-bottom: 25px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .brand-logo {
+        width: 32px;
+        height: 32px;
+        background: #000;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        color: #fff;
+      }
+      .brand-text h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.5px;
+      }
+      .brand-text p {
+        margin: 2px 0 0;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .nav-menu {
+        order: 2;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .menu-label {
+        padding: 0 20px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        margin-top: 10px;
+        letter-spacing: 0.5px;
+      }
+      .menu-item {
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        border-left: 3px solid transparent;
+      }
+      .menu-item:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+        color: #fff;
+      }
+      .menu-item.active {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--accent-orange);
+        border-left-color: var(--accent-orange);
+      }
+      .menu-item .icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+      }
+
+      .btn-auth {
+        order: 3;
+        margin: auto 20px 0 20px;
+        padding: 12px;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.2s;
+        text-align: center;
+      }
+      .btn-auth:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+      }
+      .btn-auth.logged-in {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+      .btn-auth.logged-in:hover {
+        background: var(--danger);
+        color: #fff;
+      }
+
+      /* ================= KONTEN UTAMA KANAN ================= */
+      .main-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 30px 40px;
+      }
+      .page-header {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 25px 0;
+        color: #fff;
+      }
+
+      /* TAB PANELS */
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* METRIC CARDS */
+      .kpi-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 25px;
+        align-items: stretch;
+      }
+      .kpi-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .kpi-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .kpi-title {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+      .kpi-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 12px;
+      }
+      .kpi-badge {
+        align-self: flex-start;
+        background: var(--badge-bg);
+        color: var(--badge-text);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* KARTU KOMPONEN UMUM */
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+      }
+      .card.flex-1 {
+        flex: 1;
+        margin-bottom: 0;
+      }
+      .card h3 {
+        margin: 0 0 15px 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: -5px 0 15px 0;
+      }
+
+      /* INPUTS & BUTTONS */
+      .input-box {
+        width: 100%;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        padding: 10px 12px;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 13px;
+        outline: none;
+        transition: 0.2s;
+      }
+      .input-box:focus {
+        border-color: var(--accent-orange);
+      }
+
+      select.input-box {
+        cursor: pointer;
+      }
+
+      .btn {
+        padding: 9px 15px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+      }
+      .btn:hover {
+        opacity: 0.85;
+      }
+      .btn-primary {
+        background-color: var(--primary-blue);
+      }
+      .btn-danger {
+        background-color: var(--danger);
+      }
+      .btn-accent {
+        background-color: var(--accent-orange);
+      }
+
+      .flex-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      /* TABEL STYLE */
+      .table-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+      }
+      th,
+      td {
+        padding: 15px 12px;
+        text-align: left;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      th {
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        background: rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+      }
+      tr {
+        transition: 0.2s;
+      }
+      tr:hover {
+        background-color: rgba(255, 255, 255, 0.02);
+      }
+      .table-row-selected:hover {
+        background-color: var(--row-active) !important;
+      }
+
+      .checkbox-cell {
+        width: 40px;
+        text-align: center;
+      }
+      .checkbox-custom {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        accent-color: var(--accent-orange);
+      }
+      .file-icon {
+        color: var(--text-muted);
+        margin-right: 8px;
+        font-size: 14px;
+      }
+      .status-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: rgba(255, 152, 0, 0.1);
+        color: var(--accent-orange);
+        border: 1px solid rgba(255, 152, 0, 0.2);
+        white-space: nowrap;
+      }
+
+      .input-table {
+        width: 100%;
+        min-width: 130px;
+        background: var(--bg-input);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 8px 10px;
+        color: #fff;
+        font-size: 12px;
+        outline: none;
+        transition: 0.2s;
+      }
+      .input-table:focus {
+        border-color: var(--accent-orange);
+      }
+      .input-table[readonly] {
+        background-color: transparent;
+        color: var(--text-muted);
+        cursor: not-allowed;
+        border-color: transparent;
+        padding-left: 0;
+      }
+
+      .no-aju-text {
+        font-family: monospace;
+        font-weight: 600;
+        color: #fff;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .empty-text {
+        text-align: center;
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      .group-card {
+        background: var(--bg-card);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+      }
+      .group-header {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 14px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      /* PENGATURAN COLLAPSE UNTUK TAB BERKAS */
+      .collapse-content {
+        display: none;
+      }
+      .collapse-content.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .admin-only {
+        display: none;
+      }
+      .admin-btn {
+        display: none;
+      }
+
+      #reader {
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #000;
+        border: 1px solid var(--border-color);
+      }
+
+      /* LIST BREAKDOWN ITEM */
+      .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 5px;
+        border-bottom: 1px solid var(--border-color);
+        align-items: center;
+      }
+      .breakdown-item:last-child {
+        border-bottom: none;
+      }
+      .breakdown-item span:first-child {
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: lowercase;
+      }
+
+      /* EASTER EGG */
+      #easterEggOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      #easterEggOverlay img {
+        max-width: 80%;
+        max-height: 50vh;
+        border-radius: 12px;
+        box-shadow: 0 0 30px var(--danger);
+        border: 3px solid var(--danger);
+      }
+      #easterEggOverlay h3 {
+        color: #fff;
+        font-style: italic;
+        margin-top: 20px;
+        text-align: center;
+        text-shadow: 2px 2px 4px #000;
+      }
+      .btn-tutup-easter {
+        background-color: var(--danger);
+        color: white;
+        margin-top: 20px;
+        padding: 10px 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        font-weight: bold;
+      }
+
+      /* ================= MEDIA QUERY ================= */
+      @media (max-width: 768px) {
+        body {
+          flex-direction: column;
+        }
+        .sidebar {
+          flex-direction: row;
+          flex-wrap: wrap;
+          width: 100%;
+          height: auto;
+          padding: 15px 20px;
+          border-right: none;
+          border-bottom: 1px solid var(--border-color);
+        }
+        .brand {
+          order: 1;
+          margin-bottom: 0;
+          padding: 0;
+          width: 65%;
+        }
+        .btn-auth {
+          order: 2;
+          margin: 0;
+          padding: 8px 15px;
+          width: auto;
+          font-size: 11px;
+        }
+        .nav-menu {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          flex-direction: row;
+          justify-content: space-around;
+          background: var(--bg-sidebar);
+          border-top: 1px solid var(--border-color);
+          padding: 8px 5px;
+          z-index: 9999;
+          box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
+        }
+        .menu-label {
+          display: none;
+        }
+        .menu-item {
+          flex-direction: column;
+          gap: 4px;
+          padding: 6px;
+          font-size: 10px;
+          flex: 1;
+          text-align: center;
+          border-left: none;
+          border-bottom: 2px solid transparent;
+          border-radius: 0;
+        }
+        .menu-item.active {
+          border-left: none;
+          border-bottom-color: var(--accent-orange);
+          background: transparent;
+        }
+        .menu-item .icon {
+          font-size: 18px;
+          margin: 0 auto;
+          width: auto;
+        }
+        #statusCloud {
+          display: none !important;
+        }
+        .main-content {
+          padding: 20px 15px 80px 15px;
+        }
+        .page-header {
+          font-size: 18px;
+        }
+        .kpi-row {
+          flex-direction: column;
+          gap: 15px;
+        }
+        .card h3 {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        .flex-row {
+          width: 100%;
+        }
+        .flex-row > .btn,
+        .flex-row > select,
+        .flex-row > input {
+          flex: 1;
+          justify-content: center;
+          text-align: center;
+        }
+        th,
+        td {
+          padding: 12px 8px;
+          font-size: 12px;
+        }
+        .no-aju-text {
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Kamen Rider Den-O Easter Egg (Climax Tahu) -->
+    <div id="easterEggOverlay">
+      <img
+        src="den-o.gif"
+        alt="Ore Sanjou!"
+        onerror="
+          this.src =
+            'https://media.tenor.com/P2-B2vNlJ6kAAAAC/kamen-rider-den-o-momotaros.gif'
+        "
+      />
+      <h3>
+        "Ore, Sanjou! 🚆<br />Dari awal sampai akhir, AKU SELALU CLIMAX TAHU"
+      </h3>
+      <button class="btn-tutup-easter" onclick="tutupImagin()">Ikuze!</button>
+    </div>
+
+    <div class="sidebar">
+      <div class="brand" onclick="cekImagin()">
+        <div class="brand-logo">C.</div>
+        <div class="brand-text">
+          <h2>CUSTOMS TEAM</h2>
+          <p>SHT Tegal</p>
+        </div>
+      </div>
+
+      <button id="btnAuth" class="btn-auth" onclick="toggleAuth()">
+        🔒 Login Admin
+      </button>
+
+      <div class="nav-menu">
+        <div class="menu-label">MAIN MENU</div>
+        <div
+          class="menu-item active"
+          id="menu-dashboard"
+          onclick="switchTab('dashboard')"
+        >
+          <span class="icon">⊞</span> <span>Dashboard</span>
+          <span
+            style="font-size: 10px; margin-left: auto; color: var(--badge-text)"
+            id="statusCloud"
+            >● Sync</span
+          >
+        </div>
+
+        <!-- TAB BERKAS (TERBUKA UNTUK UMUM) -->
+        <div class="menu-item" id="menu-berkas" onclick="switchTab('berkas')">
+          <span class="icon">📁</span> <span>Tab Berkas</span>
+        </div>
+
+        <div
+          class="menu-item admin-only"
+          id="menu-scanner"
+          onclick="switchTab('scanner')"
+        >
+          <span class="icon">📷</span> <span>Scanner</span>
+        </div>
+
+        <div
+          class="menu-item admin-only"
+          id="menu-upload"
+          onclick="switchTab('upload')"
+        >
+          <span class="icon">📤</span> <span>Ekstrak Data</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <h1 class="page-header">Docs IN & OUT</h1>
+
+      <!-- TAB DASHBOARD (HARI INI) -->
+      <div id="tab-dashboard" class="tab-content active">
+        <div class="kpi-row">
+          <div class="kpi-col">
+            <div class="kpi-card">
+              <div class="kpi-title">Total Dokumen Hari Ini</div>
+              <div class="kpi-value" id="kpiTotalAju">0</div>
+              <div class="kpi-badge">
+                <span id="kpiBadgeAju">0</span>
+                <span style="font-weight: normal; margin-left: 3px"
+                  >tersimpan</span
+                >
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Kategori Jenis BC</div>
+              <div class="kpi-value" id="kpiTotalJenis">0</div>
+              <div
+                class="kpi-badge"
+                style="
+                  background-color: rgba(33, 150, 243, 0.15);
+                  color: #64b5f6;
+                "
+              >
+                ↑ Aktif di Cloud
+              </div>
+            </div>
+          </div>
+          <div class="card flex-1">
+            <h3>📊 Rekap Harian (Hari Ini)</h3>
+            <div
+              id="kpiBreakdownContainer"
+              style="max-height: 200px; overflow-y: auto; padding-right: 5px"
+            >
+              <div class="empty-text">Memuat data...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="flex-wrap: wrap; gap: 15px">
+            <span>Daftar AJU Hari Ini</span>
+            <div class="flex-row" style="flex: 1; justify-content: flex-end">
+              <input
+                type="text"
+                id="mainSearch"
+                class="input-box"
+                placeholder="🔍 Ketik Nomor Aju..."
+                oninput="jalankanFilterLive()"
+                style="max-width: 250px"
+              />
+            </div>
+          </h3>
+          <div id="ajuGroupContainer">
+            <div class="empty-text">Memuat data dari server...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB BERKAS (H-1 & SEBELUMNYA) -->
+      <div id="tab-berkas" class="tab-content">
+        <div class="card">
+          <h3 style="flex-wrap: wrap; gap: 15px">
+            <span>📂 Riwayat Berkas Sebelumnya</span>
+            <div class="flex-row" style="flex: 1; justify-content: flex-end">
+              <input
+                type="text"
+                id="berkasSearch"
+                class="input-box"
+                placeholder="🔍 Ketik Nomor Aju..."
+                oninput="jalankanFilterLive()"
+                style="max-width: 250px"
+              />
+            </div>
+          </h3>
+          <p style="margin-bottom: 20px">
+            Data aju dari hari sebelumnya otomatis dikelompokkan di sini.
+          </p>
+          <div id="berkasContainer">
+            <div class="empty-text">Memuat histori dari server...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB SCANNER -->
+      <div id="tab-scanner" class="tab-content">
+        <div class="card">
+          <h3>📷 Pengumpul Nomor Aju (Scanner)</h3>
+          <p>Arahkan kamera ke QR Code atau ketik manual Nomor Pengajuan.</p>
+          <div id="reader"></div>
+          <div class="flex-row" style="margin-top: 15px">
+            <input
+              type="text"
+              id="manualAju"
+              class="input-box"
+              placeholder="Ketik/Paste 26 digit No Aju di sini..."
+            />
+            <button class="btn btn-accent" onclick="inputManual()">
+              ➕ Tambah
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB UPLOAD -->
+      <div id="tab-upload" class="tab-content">
+        <div class="card">
+          <h3>📦 Tarik Nama Supplier Masal (*Bulk Fill)</h3>
+          <p>
+            Upload Excel CEISA untuk mengisi otomatis nama Supplier (Perusahaan
+            Asal) pada seluruh daftar Aju.
+          </p>
+          <div class="flex-row">
+            <input
+              type="file"
+              id="fileSupplier"
+              accept=".xlsx, .xls"
+              class="input-box"
+              style="flex: 1"
+            />
+            <button class="btn btn-accent" onclick="tarikSupplierOtomatis()">
+              🔄 Ekstrak Supplier
+            </button>
+          </div>
+          <div
+            id="statusSupplier"
+            style="
+              font-size: 13px;
+              margin-top: 10px;
+              color: var(--accent-orange);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // =========================================================================
+      // FIREBASE CONFIG
+      // =========================================================================
+      const firebaseConfig = {
+        apiKey: "AIzaSyBuzTj07VUTQVWW3Gsv76NrBVwKpCepI-A",
+        authDomain: "scanbc-f5127.firebaseapp.com",
+        projectId: "scanbc-f5127",
+        storageBucket: "scanbc-f5127.firebasestorage.app",
+        messagingSenderId: "1097062856738",
+        appId: "1:1097062856738:web:2c30329b9d23bf261af27b",
+      };
+      // =========================================================================
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const ajuCollection = db.collection("dokumenAju");
+
+      let dataDokumen = [];
+      let isProcessing = false;
+      let isAdmin = false;
+      let html5QrcodeScanner = null;
+
+      // ==========================================
+      // OTENTIKASI & 12-HOUR SESSION
+      // ==========================================
+      document.addEventListener("DOMContentLoaded", () => {
+        let auth = JSON.parse(localStorage.getItem("adminAuth") || "null");
+        if (auth && auth.exp > Date.now()) {
+          isAdmin = true;
+          document.getElementById("btnAuth").innerText = "🔓 Logout Admin";
+          document.getElementById("btnAuth").classList.add("logged-in");
+        }
+        updateUIVisibility();
+      });
+
+      function toggleAuth() {
+        if (isAdmin) {
+          isAdmin = false;
+          localStorage.removeItem("adminAuth");
+          document.getElementById("btnAuth").innerText = "🔒 Login Admin";
+          document.getElementById("btnAuth").classList.remove("logged-in");
+          switchTab("dashboard");
+          alert("Logout sukses. Kembali ke mode peninjauan.");
+        } else {
+          let pass = prompt("Masukkan Password Otoritas Admin:");
+          if (pass === "OMKEGAS") {
+            isAdmin = true;
+            // Set kedaluwarsa 12 Jam dari sekarang
+            let expTime = Date.now() + 12 * 60 * 60 * 1000;
+            localStorage.setItem("adminAuth", JSON.stringify({ exp: expTime }));
+            document.getElementById("btnAuth").innerText = "🔓 Logout Admin";
+            document.getElementById("btnAuth").classList.add("logged-in");
+          } else if (pass !== null) {
+            alert("Akses ditolak! Kata sandi keliru.");
+          }
+        }
+        updateUIVisibility();
+      }
+
+      function updateUIVisibility() {
+        document
+          .querySelectorAll(".admin-only")
+          .forEach((el) => (el.style.display = isAdmin ? "block" : "none"));
+        document
+          .querySelectorAll(".admin-only.menu-item")
+          .forEach((el) => (el.style.display = isAdmin ? "flex" : "none"));
+        document
+          .querySelectorAll(".admin-btn")
+          .forEach(
+            (el) => (el.style.display = isAdmin ? "inline-block" : "none"),
+          );
+
+        if (
+          isAdmin &&
+          document.getElementById("tab-scanner").classList.contains("active")
+        ) {
+          setTimeout(startScanner, 150);
+        } else {
+          stopScanner();
+        }
+        renderListGrouped();
+      }
+
+      // ==========================================
+      // SISTEM TAB NAVIGASI
+      // ==========================================
+      function switchTab(tabId) {
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((el) => el.classList.remove("active"));
+        document
+          .querySelectorAll(".menu-item")
+          .forEach((el) => el.classList.remove("active"));
+
+        document.getElementById("tab-" + tabId).classList.add("active");
+        document.getElementById("menu-" + tabId).classList.add("active");
+
+        if (tabId === "scanner" && isAdmin) {
+          setTimeout(startScanner, 200);
+        } else {
+          stopScanner();
+        }
+      }
+
+      // ==========================================
+      // LAZY LOAD SCANNER
+      // ==========================================
+      function startScanner() {
+        if (!html5QrcodeScanner) {
+          html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            {
+              fps: 20,
+              qrbox: { width: 250, height: 250 },
+              formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+              videoConstraints: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+            },
+            false,
+          );
+          html5QrcodeScanner.render(prosesDataMasuk, function (error) {});
+        }
+      }
+      function stopScanner() {
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner
+            .clear()
+            .then(() => (html5QrcodeScanner = null))
+            .catch((e) => console.error(e));
+        }
+      }
+
+      // ==========================================
+      // METRICS & TANGGAL UTILS
+      // ==========================================
+      function getTodayStr() {
+        let d = new Date();
+        // Waktu standar (GMT+7) Indonesia (WIB)
+        let utc = d.getTime() + d.getTimezoneOffset() * 60000;
+        let nd = new Date(utc + 3600000 * 7);
+        return `${nd.getFullYear()}-${(nd.getMonth() + 1).toString().padStart(2, "0")}-${nd.getDate().toString().padStart(2, "0")}`;
+      }
+
+      function getRekapData(docs) {
+        let breakdown = {};
+        docs.forEach((d) => {
+          let typeStr = d.jenis.toUpperCase().replace(/\s/g, "");
+          if (!typeStr.startsWith("BC") && typeStr !== "LAINNYA")
+            typeStr = "BC" + typeStr;
+          breakdown[typeStr] = (breakdown[typeStr] || 0) + 1;
+        });
+        return breakdown;
+      }
+
+      function updateKPI(docs) {
+        let todayStr = getTodayStr();
+        let todayDocs = docs.filter((d) => d.tanggalScan === todayStr);
+
+        document.getElementById("kpiTotalAju").innerText = todayDocs.length;
+        document.getElementById("kpiBadgeAju").innerText =
+          `+${todayDocs.length}`;
+
+        let breakdown = getRekapData(todayDocs);
+        document.getElementById("kpiTotalJenis").innerText =
+          Object.keys(breakdown).length;
+
+        let breakdownHTML = "";
+        for (let type in breakdown) {
+          breakdownHTML += `
+                <div class="breakdown-item">
+                    <span>${type}</span>
+                    <span class="badge" style="background: rgba(33, 150, 243, 0.15); color: #64b5f6; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${breakdown[type]} document</span>
+                </div>`;
+        }
+        if (Object.keys(breakdown).length === 0)
+          breakdownHTML = `<div class="empty-text">Belum ada data hari ini</div>`;
+        document.getElementById("kpiBreakdownContainer").innerHTML =
+          breakdownHTML;
+      }
+
+      let hitungKetukan = 0;
+      function cekImagin() {
+        hitungKetukan++;
+        if (hitungKetukan === 4) {
+          document.getElementById("easterEggOverlay").style.display = "flex";
+          hitungKetukan = 0;
+        }
+        setTimeout(() => (hitungKetukan = 0), 2000);
+      }
+      function tutupImagin() {
+        document.getElementById("easterEggOverlay").style.display = "none";
+      }
+
+      // ==========================================
+      // DATABASE LISTENER REALTIME
+      // ==========================================
+      ajuCollection.orderBy("timestamp", "asc").onSnapshot(
+        (snapshot) => {
+          dataDokumen = [];
+          snapshot.forEach((doc) => {
+            dataDokumen.push({
+              id: doc.id,
+              noAju: doc.data().noAju,
+              jenis: doc.data().jenis,
+              waktuScan: doc.data().waktuScan || "",
+              tanggalScan: doc.data().tanggalScan || "",
+              supplier: doc.data().supplier || "",
+              catatan: doc.data().catatan || "",
+            });
+          });
+          document.getElementById("statusCloud").style.color =
+            "var(--badge-text)";
+          updateKPI(dataDokumen);
+          renderListGrouped();
+        },
+        (error) => {
+          document.getElementById("statusCloud").style.color = "var(--danger)";
+          document.getElementById("statusCloud").innerText = "● Disconnected";
+        },
+      );
+
+      // ==========================================
+      // LOGIKA SCANNER & INPUT DATA
+      // ==========================================
+      function cariJenisBC(noAju) {
+        if (noAju.length === 26) {
+          const validBc = ["262", "261", "23", "40", "27", "41", "30", "25"];
+          let ekor3_blok1 = parseInt(noAju.substring(3, 6), 10).toString();
+          let ekor2_blok1 = parseInt(noAju.substring(4, 6), 10).toString();
+          let blok2_utuh = parseInt(noAju.substring(6, 12), 10).toString();
+          let terdeteksi = null;
+          if (validBc.includes(ekor3_blok1)) terdeteksi = ekor3_blok1;
+          else if (validBc.includes(ekor2_blok1)) terdeteksi = ekor2_blok1;
+          else if (validBc.includes(blok2_utuh)) terdeteksi = blok2_utuh;
+          if (terdeteksi) return terdeteksi === "27" ? "27 IN" : terdeteksi;
+        }
+        return "Lainnya";
+      }
+
+      function ekstrakNoAju(teks) {
+        let matchJson = teks.match(
+          /noAju['"\s]*:\s*['"]*([a-zA-Z0-9]{26})['"]*/i,
+        );
+        if (matchJson && matchJson[1]) return matchJson[1];
+        let matchAlpha = teks.match(/\b([a-zA-Z0-9]{26})\b/);
+        if (matchAlpha && matchAlpha[1]) return matchAlpha[1];
+        let matchStrip = teks.match(
+          /([a-zA-Z0-9]{6}-?[a-zA-Z0-9]{6}-?\d{8}-?\d{6})/,
+        );
+        if (matchStrip && matchStrip[1]) return matchStrip[1].replace(/-/g, "");
+        return teks.trim();
+      }
+
+      function prosesDataMasuk(decodedText) {
+        if (isProcessing) return;
+        let noAjuBersih = ekstrakNoAju(decodedText);
+        if (noAjuBersih.length !== 26) {
+          alert("Nomor Aju tidak valid (harus 26 digit)!");
+          return;
+        }
+        if (dataDokumen.some((doc) => doc.noAju === noAjuBersih)) {
+          alert("Aju sudah ada di daftar!");
+          return;
+        }
+
+        isProcessing = true;
+        let jenisBC = cariJenisBC(noAjuBersih);
+        let now = new Date();
+        let jam = now.getHours().toString().padStart(2, "0"),
+          menit = now.getMinutes().toString().padStart(2, "0");
+        let tgl = getTodayStr();
+
+        ajuCollection
+          .add({
+            noAju: noAjuBersih,
+            jenis: jenisBC,
+            waktuScan: `${jam}:${menit}`,
+            tanggalScan: tgl,
+            supplier: "",
+            catatan: "",
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          })
+          .then(() => {
+            new Audio("sukses.mp3").play().catch(() => {});
+            isProcessing = false;
+          })
+          .catch((error) => {
+            alert("Error database: " + error.message);
+            isProcessing = false;
+          });
+      }
+
+      function inputManual() {
+        let teks = document.getElementById("manualAju").value;
+        if (teks.trim() === "") return;
+        prosesDataMasuk(teks);
+        document.getElementById("manualAju").value = "";
+      }
+
+      // ==========================================
+      // RENDER UI PER HARI DAN BERKAS
+      // ==========================================
+      function updateSupplierDb(docId, nilaiBaru) {
+        if (isAdmin) ajuCollection.doc(docId).update({ supplier: nilaiBaru });
+      }
+      function updateCatatanDb(docId, nilaiBaru) {
+        if (isAdmin) ajuCollection.doc(docId).update({ catatan: nilaiBaru });
+      }
+      function ubahJenis27(docId, nilaiBaru) {
+        if (isAdmin) ajuCollection.doc(docId).update({ jenis: nilaiBaru });
+      }
+
+      function toggleCollapse(id) {
+        let el = document.getElementById(id);
+        if (el) el.classList.toggle("show");
+      }
+
+      function jalankanFilterLive() {
+        renderListGrouped();
+      }
+
+      function renderListGrouped() {
+        let todayStr = getTodayStr();
+
+        let searchMain = document.getElementById("mainSearch")
+          ? document.getElementById("mainSearch").value.toLowerCase().trim()
+          : "";
+        let searchBerkas = document.getElementById("berkasSearch")
+          ? document.getElementById("berkasSearch").value.toLowerCase().trim()
+          : "";
+
+        // Pemisahan Data Dashboard vs Berkas
+        let todayDocs = dataDokumen.filter(
+          (d) =>
+            d.tanggalScan === todayStr &&
+            d.noAju.toLowerCase().includes(searchMain),
+        );
+        let pastDocs = dataDokumen.filter(
+          (d) =>
+            d.tanggalScan !== todayStr &&
+            d.noAju.toLowerCase().includes(searchBerkas),
+        );
+
+        // Generate HTML Group
+        renderGroupToContainer(todayDocs, "ajuGroupContainer", true); // Buka Otomatis
+        renderGroupToContainer(pastDocs, "berkasContainer", false); // Minimize
+      }
+
+      function renderGroupToContainer(
+        docsArray,
+        containerId,
+        isExpandedByDefault,
+      ) {
+        const container = document.getElementById(containerId);
+        if (docsArray.length === 0) {
+          container.innerHTML = `<div class="empty-text" style="padding: 30px;">Tidak ada dokumen ditemukan.</div>`;
+          return;
+        }
+
+        let groupedByDate = docsArray.reduce((acc, doc) => {
+          let tgl = doc.tanggalScan || "Tanpa Tanggal";
+          if (!acc[tgl]) acc[tgl] = [];
+          acc[tgl].push(doc);
+          return acc;
+        }, {});
+
+        let sortedDates = Object.keys(groupedByDate).sort((a, b) =>
+          b.localeCompare(a),
+        );
+        container.innerHTML = "";
+
+        for (const tgl of sortedDates) {
+          // Convert yyyy-mm-dd ke dd-mm-yyyy
+          let tglDisplay = tgl;
+          if (tgl.length === 10 && tgl.includes("-")) {
+            let tk = tgl.split("-");
+            if (tk[0].length === 4) tglDisplay = `${tk[2]}-${tk[1]}-${tk[0]}`;
+          }
+
+          // Tombol Header Per Hari
+          let collapseBtn = !isExpandedByDefault
+            ? `<button class="btn btn-accent" style="padding: 6px 12px; font-size:11px;" onclick="toggleCollapse('collapse-${tgl}')">👁️ Tampilkan Aju</button>`
+            : "";
+
+          let dateSectionHTML = `
+                <div class="group-card" style="margin-bottom: 30px; border: 1px solid var(--border-color);">
+                    <div class="group-header">
+                        <h4 style="color: #fff; margin: 0; font-size: 14px; display:flex; align-items:center;">
+                            📅 Tgl Scan: ${tglDisplay} 
+                            <span class="badge" style="margin-left:8px; background: rgba(255,255,255,0.1); padding: 3px 6px; border-radius: 4px; font-size: 11px;">${groupedByDate[tgl].length} doc</span>
+                        </h4>
+                        <div class="flex-row">
+                            ${collapseBtn}
+                            <button class="btn btn-primary" style="padding: 6px 12px; font-size:11px;" onclick="copyPerHari('${tgl}')">📋 Copy Perhari</button>
+                            <button class="btn btn-danger admin-btn" style="padding: 6px 12px; font-size:11px; display:${isAdmin ? "inline-block" : "none"};" onclick="hapusPerHari('${tgl}')">🗑️ Hapus Perhari</button>
+                        </div>
+                    </div>
+                    <div id="collapse-${tgl}" class="collapse-content ${isExpandedByDefault ? "show" : ""}" style="padding: 20px;">
+              `;
+
+          let docsInDate = groupedByDate[tgl];
+          let groupedByType = docsInDate.reduce((acc, doc) => {
+            if (!acc[doc.jenis]) acc[doc.jenis] = [];
+            acc[doc.jenis].push(doc);
+            return acc;
+          }, {});
+
+          for (const [jenis, docs] of Object.entries(groupedByType)) {
+            let namaBc = jenis === "Lainnya" ? "Lainnya" : `BC ${jenis}`;
+
+            dateSectionHTML += `
+                      <div style="margin-bottom: 25px;">
+                          <div style="margin-bottom:10px; font-weight:600; color:var(--text-muted); font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">
+                              Kategori: ${namaBc}
+                          </div>
+                          <div class="table-container">
+                              <table>
+                                  <thead>
+                                      <tr>
+                                          <th style="width: 10%;">WAKTU</th>
+                                          <th class="checkbox-cell"><input type="checkbox" class="checkbox-custom" disabled></th>
+                                          <th style="width: 25%;">DOKUMEN AJU</th>
+                                          <th style="width: 25%;">SUPPLIER</th>
+                                          <th style="width: 20%;">CATATAN</th>
+                                          <th class="text-center" style="width: 20%;">AKSI</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                  `;
+
+            docs.forEach((doc) => {
+              let labelAtauDropdown =
+                doc.jenis.startsWith("27") && isAdmin
+                  ? `<select class="select-bc" onchange="ubahJenis27('${doc.id}', this.value)" style="padding:4px; font-size:11px; background: var(--bg-input); color: #fff; border: 1px solid var(--border-color); border-radius: 4px;">
+                                  <option value="27 IN" ${doc.jenis === "27 IN" ? "selected" : ""}>27 IN</option>
+                                  <option value="27 OUT" ${doc.jenis === "27 OUT" ? "selected" : ""}>27 OUT</option>
+                               </select>`
+                  : `<span class="status-badge">${namaBc}</span>`;
+
+              dateSectionHTML += `
+                                      <tr class="table-row-selected">
+                                          <td><div style="color:#fff; font-weight:600; font-size:13px;">⏰ ${doc.waktuScan}</div></td>
+                                          <td class="checkbox-cell"><input type="checkbox" class="checkbox-custom"></td>
+                                          <td>
+                                              <div style="display:flex; align-items:center;">
+                                                  <span class="file-icon">📁</span>
+                                                  <div>
+                                                      <div class="no-aju-text">${doc.noAju}</div>
+                                                      <div style="margin-top:4px;">${labelAtauDropdown}</div>
+                                                  </div>
+                                              </div>
+                                          </td>
+                                          <td><input type="text" value="${doc.supplier || ""}" class="input-table" placeholder="[Kosong]" onchange="updateSupplierDb('${doc.id}', this.value)" ${isAdmin ? "" : "readonly"}></td>
+                                          <td><input type="text" value="${doc.catatan || ""}" class="input-table" placeholder="[Kosong]" onchange="updateCatatanDb('${doc.id}', this.value)" ${isAdmin ? "" : "readonly"}></td>
+                                          <td class="text-center">
+                                              <!-- Satuan Copy & Hapus -->
+                                              <button class="btn btn-primary" onclick="copySatu('${namaBc.replace(/\s/g, "")}', '${doc.waktuScan}', '${doc.tanggalScan}', '${doc.noAju}')" style="padding: 6px 10px; margin-right: 4px;">Copy</button>
+                                              <button class="btn btn-danger admin-btn" onclick="hapusSatu('${doc.id}')" style="padding: 6px 10px; display:${isAdmin ? "inline-block" : "none"};">Hapus</button>
+                                          </td>
+                                      </tr>`;
+            });
+            dateSectionHTML += `</tbody></table></div></div>`;
+          }
+          dateSectionHTML += `</div></div>`; // Tutup padding & card
+          container.innerHTML += dateSectionHTML;
+        }
+      }
+
+      // ==========================================
+      // COPY & HAPUS UTILITIES
+      // ==========================================
+
+      // Opsi Format Hapus Perhari
+      function hapusPerHari(tglScanTarget) {
+        if (!isAdmin) return;
+        if (
+          confirm(
+            `⚠️ PERHATIAN: Hapus SELURUH data pada tanggal ${tglScanTarget}? Tindakan ini tidak bisa dibatalkan.`,
+          )
+        ) {
+          let docsToDelete = dataDokumen.filter(
+            (d) => d.tanggalScan === tglScanTarget,
+          );
+          let batch = db.batch();
+          docsToDelete.forEach((doc) =>
+            batch.delete(ajuCollection.doc(doc.id)),
+          );
+          batch
+            .commit()
+            .then(() =>
+              alert(`Seluruh Aju pada ${tglScanTarget} berhasil dihapus!`),
+            );
+        }
+      }
+
+      // Copy 1 Satuan (Tabular)
+      function copySatu(bctype, waktu, tgl, noAju) {
+        if (bctype === "Lainnya") bctype = "LAINNYA";
+        let txt = `${bctype}\t${waktu}\t${tgl}\t${noAju}`;
+        navigator.clipboard
+          .writeText(txt)
+          .then(() => alert("1 Aju tersalin ke clipboard!"));
+      }
+
+      // Copy Semua Perhari Dengan Format Excel (Menyerupai Gambar Report)
+      function copyPerHari(tglScanTarget) {
+        let docs = dataDokumen.filter((d) => d.tanggalScan === tglScanTarget);
+        if (docs.length === 0) return;
+
+        let bd = getRekapData(docs);
+        let total = docs.length;
+
+        // Pemformatan tanggal m/d/yyyy
+        let tk = tglScanTarget.split("-");
+        let dObj = new Date(tk[0], tk[1] - 1, tk[2]);
+        let tglFormat = `${dObj.getMonth() + 1}/${dObj.getDate()}/${dObj.getFullYear()}`;
+
+        // Format Header
+        let txt = `REPORT DOCS IN / OUT\n`;
+        txt += `${tglFormat}\n\n`;
+
+        // Format Rekap Count Kategori
+        for (let k in bd) {
+          txt += `${k}\t${bd[k]}\n`;
+        }
+        txt += `TOTAL\t${total}\n\n`;
+
+        // Format Table Aju
+        // (Kita menggunakan kolom WAKTU karena di gambar diminta data Jam dari user request)
+        txt += `BC TYPE\tWAKTU\tTGL BC\tNO AJU\n`;
+
+        // Sort prioritas berdasarkan Jenis BC
+        docs.sort((a, b) => a.jenis.localeCompare(b.jenis));
+
+        docs.forEach((d) => {
+          let bctype = d.jenis.toUpperCase().replace(/\s/g, "");
+          if (!bctype.startsWith("BC") && bctype !== "LAINNYA")
+            bctype = "BC" + bctype;
+
+          txt += `${bctype}\t${d.waktuScan}\t${d.tanggalScan}\t${d.noAju}\n`;
+        });
+
+        navigator.clipboard
+          .writeText(txt)
+          .then(() =>
+            alert(
+              `Format report tanggal ${tglScanTarget} berhasil disalin. Siap di-paste ke Excel!`,
+            ),
+          );
+      }
+
+      function hapusSatu(docId) {
+        if (isAdmin) {
+          if (confirm("Hapus aju ini?")) {
+            ajuCollection.doc(docId).delete();
+          }
+        }
+      }
+
+      // ==========================================
+      // BULK EXTRACT (Diubah Ke Perusahaan Asal)
+      // ==========================================
+      function tarikSupplierOtomatis() {
+        const fileInput = document.getElementById("fileSupplier");
+        const statusSup = document.getElementById("statusSupplier");
+        if (fileInput.files.length === 0 || dataDokumen.length === 0) {
+          alert("Pilih file & pastikan ada Aju tersimpan!");
+          return;
+        }
+        statusSup.innerHTML = "⏳ Ekstrak berjalan...";
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const entitasSheet = workbook.Sheets["ENTITAS"];
+            if (!entitasSheet) {
+              statusSup.innerHTML =
+                "🔴 Gagal: Sheet ENTITAS tidak ditemukan pada file Excel!";
+              return;
+            }
+            const arrEntitas = XLSX.utils.sheet_to_json(entitasSheet);
+            let updateCount = 0;
+            let batch = db.batch();
+
+            dataDokumen.forEach((doc) => {
+              let listEntitas = arrEntitas.filter(
+                (ent) => ent["NOMOR AJU"] === doc.noAju,
+              );
+              if (listEntitas.length > 0) {
+                // Algoritma Prioritas: Mencari Perusahaan ASAL (Sesuai Koreksi)
+                let eLawan = listEntitas.find(
+                  (e) =>
+                    // Coba cek melalui kolom PERAN jika ada (Asal / Pengirim)
+                    (e["PERAN"] &&
+                      (e["PERAN"].toUpperCase() === "ASAL" ||
+                        e["PERAN"].toUpperCase() === "PENGIRIM")) ||
+                    // Fallback jika hanya ada nama entitas: ambil yang bukan perusahaan induk dan bukan terindikasi tujuan
+                    (e["NAMA ENTITAS"] &&
+                      !e["NAMA ENTITAS"]
+                        .toUpperCase()
+                        .includes("SHYANG HUNG TAH") &&
+                      (!e["PERAN"] || e["PERAN"].toUpperCase() !== "TUJUAN")),
+                );
+
+                if (eLawan && eLawan["NAMA ENTITAS"]) {
+                  batch.update(ajuCollection.doc(doc.id), {
+                    supplier: eLawan["NAMA ENTITAS"],
+                  });
+                  updateCount++;
+                }
+              }
+            });
+            if (updateCount > 0) {
+              batch
+                .commit()
+                .then(
+                  () =>
+                    (statusSup.innerHTML = `✅ ${updateCount} nama entitas asal diperbarui!`),
+                );
+            } else {
+              statusSup.innerHTML =
+                "⚠️ Tidak ada data entitas asal yang cocok dengan Aju tersimpan.";
+            }
+          } catch (err) {
+            statusSup.innerHTML = "🔴 Format file Excel keliru atau *corrupt*.";
+          }
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
+      }
+    </script>
+  </body>
+</html>
