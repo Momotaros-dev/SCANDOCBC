@@ -45,7 +45,7 @@
         overflow: hidden;
       }
 
-      /* ================= SIDEBAR KIRI ================= */
+      /* ================= LEFT SIDEBAR ================= */
       .sidebar {
         width: 250px;
         background-color: var(--bg-sidebar);
@@ -162,7 +162,7 @@
         color: #fff;
       }
 
-      /* ================= KONTEN UTAMA KANAN ================= */
+      /* ================= RIGHT MAIN CONTENT ================= */
       .main-content {
         flex: 1;
         overflow-y: auto;
@@ -242,7 +242,6 @@
         gap: 4px;
       }
 
-      /* KARTU KOMPONEN UMUM */
       .card {
         background: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -325,7 +324,7 @@
         flex-wrap: wrap;
       }
 
-      /* TABEL STYLE */
+      /* TABLE STYLE */
       .table-container {
         width: 100%;
         overflow-x: auto;
@@ -627,7 +626,7 @@
     </style>
   </head>
   <body>
-    <!-- Kamen Rider Den-O Easter Egg (Climax Tahu) -->
+    <!-- Easter Egg -->
     <div id="easterEggOverlay">
       <img
         src="den-o.gif"
@@ -671,7 +670,7 @@
           >
         </div>
 
-        <!-- TAB BERKAS (TERBUKA UNTUK UMUM) -->
+        <!-- TAB BERKAS (non-admin) -->
         <div class="menu-item" id="menu-berkas" onclick="switchTab('berkas')">
           <span class="icon">📁</span> <span>Tab Berkas</span>
         </div>
@@ -697,7 +696,7 @@
     <div class="main-content">
       <h1 class="page-header">Docs IN & OUT</h1>
 
-      <!-- TAB DASHBOARD (HARI INI) -->
+      <!-- TAB DASHBOARD -->
       <div id="tab-dashboard" class="tab-content active">
         <div class="kpi-row">
           <div class="kpi-col">
@@ -721,7 +720,7 @@
                   color: #64b5f6;
                 "
               >
-                ↑ Aktif di Cloud
+                ↑ Aktif di Cloud=
               </div>
             </div>
           </div>
@@ -756,7 +755,7 @@
         </div>
       </div>
 
-      <!-- TAB BERKAS (H-1 & SEBELUMNYA) -->
+      <!-- TAB BERKAS -->
       <div id="tab-berkas" class="tab-content">
         <div class="card">
           <h3 style="flex-wrap: wrap; gap: 15px">
@@ -857,7 +856,7 @@
       let html5QrcodeScanner = null;
 
       // ==========================================
-      // OTENTIKASI & 12-HOUR SESSION
+      // Login Admin
       // ==========================================
       document.addEventListener("DOMContentLoaded", () => {
         let auth = JSON.parse(localStorage.getItem("adminAuth") || "null");
@@ -918,7 +917,7 @@
       }
 
       // ==========================================
-      // SISTEM TAB NAVIGASI
+      // NAVIGASI
       // ==========================================
       function switchTab(tabId) {
         document
@@ -939,7 +938,7 @@
       }
 
       // ==========================================
-      // LAZY LOAD SCANNER
+      // LOAD SCANNER
       // ==========================================
       function startScanner() {
         if (!html5QrcodeScanner) {
@@ -969,9 +968,6 @@
         }
       }
 
-      // ==========================================
-      // METRICS & TANGGAL UTILS
-      // ==========================================
       function getTodayStr() {
         let d = new Date();
         // Waktu standar (GMT+7) Indonesia (WIB)
@@ -1031,7 +1027,7 @@
       }
 
       // ==========================================
-      // DATABASE LISTENER REALTIME
+      // DATABASE REALTIME
       // ==========================================
       ajuCollection.orderBy("timestamp", "asc").onSnapshot(
         (snapshot) => {
@@ -1059,7 +1055,7 @@
       );
 
       // ==========================================
-      // LOGIKA SCANNER & INPUT DATA
+      // SCANNER & DATA INPUT
       // ==========================================
       function cariJenisBC(noAju) {
         if (noAju.length === 26) {
@@ -1137,7 +1133,7 @@
       }
 
       // ==========================================
-      // RENDER UI PER HARI DAN BERKAS
+      // RENDER UI
       // ==========================================
       function updateSupplierDb(docId, nilaiBaru) {
         if (isAdmin) ajuCollection.doc(docId).update({ supplier: nilaiBaru });
@@ -1306,7 +1302,7 @@
       }
 
       // ==========================================
-      // COPY & HAPUS UTILITIES
+      // COPY & HAPUS
       // ==========================================
 
       // Opsi Format Hapus Perhari
@@ -1397,7 +1393,7 @@
       }
 
       // ==========================================
-      // BULK EXTRACT (Diubah Ke Perusahaan Asal)
+      // BULK EXTRACT
       // ==========================================
       function tarikSupplierOtomatis() {
         const fileInput = document.getElementById("fileSupplier");
